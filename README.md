@@ -20,7 +20,7 @@
 │   ├── client.py           # API 통신 및 재시도 로직 (지수 백오프 적용)
 │   ├── transformer.py      # 데이터 정규화 및 DTO 변환
 │   ├── storage.py          # SQLite 기반 원자적 트랜잭션 관리
-│   └── crawler.py          # 크롤링 워크플로우 제어 (Orchestrator)
+│   └── crawler.py          # 크롤링 워크플로우 제어 (Crawler Engine)
 ├── ocr_parser/             # OCR 파싱 패키지
 │   ├── schemas.py          # Pydantic 기반 데이터 무결성 검증
 │   └── processor.py        # 차량번호 특화 정규식 및 파싱 엔진
@@ -243,25 +243,24 @@ elif len(non_zero) == 2:
 **계층화 아키텍처 (4-Layer)**
 
 ```
-┌─────────────────────────────────────────┐
-│  Orchestrator (crawler.py)              │  ← 워크플로우 제어
-│  - 페이지 순회 / 재시도 전략            │
-│  - 통계 수집 / 리포팅                    │
-│  - 세션 관리                             │
-└──────────────┬──────────────────────────┘
-               │
-┌──────────────┴──────────────────────────┐
-│  Business Logic (transformer.py)        │  ← 데이터 정규화
-│  - DTO 변환 / 검증                       │
-│  - 상세 정보 병합                        │
-└──────────────┬──────────────────────────┘
-               │
-┌──────────────┴──────────────────────────┐
-│  Infrastructure (client.py, storage.py) │  ← 외부 의존성
-│  - HTTP 통신 / 지수 백오프               │
-│  - SQLite 트랜잭션 / 중복 체크           │
-│  - 세션 로그 관리                        │
-└─────────────────────────────────────────┘
+┌───────────────────────────────────────────────┐
+│  Layer 1. Crawler Engine (crawler.py)         │
+│  - Workflow Control                           │
+│  - Retry Strategy / Reporting / Session       │
+└───────────────────────┬───────────────────────┘
+                        │
+┌───────────────────────┴───────────────────────┐
+│  Layer 2. Business Logic (transformer.py)     │
+│  - Data Normalization                         │
+│  - DTO Validation / Merge Details             │
+└───────────────────────┬───────────────────────┘
+                        │
+┌───────────────────────┴───────────────────────┐
+│  Layer 3. Infrastructure (client, storage)    │
+│  - HTTP Client / Backoff                      │
+│  - DB Transaction / Deduplication             │
+└───────────────────────────────────────────────┘
+
 ```
 
 **시스템 견고성 설계**
@@ -497,15 +496,6 @@ CREATE TABLE crawl_sessions (
 - Proxy Rotation
 - Rate Limiter 추가
 - Redis 캐싱 레이어
-
-**Phase 3: 정확도 개선**
-- Vision Transformer 기반 OCR (TrOCR)
-- 예상 효과: 파싱 정확도 85% → 95%
-
-**Phase 4: 확장성**
-- PostgreSQL 마이그레이션
-- Kubernetes 배포
-- 실시간 모니터링 (Grafana)
 
 ---
 
