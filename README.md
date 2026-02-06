@@ -84,10 +84,11 @@ pytest-asyncio>=0.21.0    # 비동기 테스트
 python main.py --help
 
 # 사용 예시:
-#   python main.py ocr                    # OCR만 실행
-#   python main.py crawler --pages 3      # 크롤러만 실행 (3페이지)
-#   python main.py crawler --pages 5 --details  # 상세정보 포함
-#   python main.py all --pages 2          # 둘 다 실행
+#   python main.py ocr                           # OCR만 실행
+#   python main.py crawler --pages 3             # 크롤러만 실행 (3페이지)
+#   python main.py crawler --pages 5 --details   # 상세정보 포함
+#   python main.py crawler --mode interval --seconds 3600 --pages 2  # 1시간 간격 반복 실행
+#   python main.py all --pages 2                 # 둘 다 실행
 ```
 
 **과제 A: OCR 파싱 실행**
@@ -99,51 +100,74 @@ python main.py ocr
 # ============================================================
 # 과제 A: OCR 계근표 파싱 시작
 # ============================================================
-# 총 4개의 파일을 처리합니다.
-#
-# [1/4] 파일 처리 중: sample_01.json
-#   └─ 성공: 차량번호=8713, 총중량=12480kg, 실중량=5010kg
-# [2/4] 파일 처리 중: sample_02.json
-#   └─ 성공: 차량번호=80구8713, 총중량=13460kg, 실중량=5900kg
-# ...
-# ✓ 4건의 데이터를 CSV로 저장했습니다: output/ocr_results.csv
+# [1] sample_01.json 파싱 성공: 8713
+# [2] sample_02.json 파싱 성공: 80구8713
+# [3] sample_03.json 파싱 성공: 5405
+# [4] sample_04.json 파싱 성공: 0580
+# 결과 저장 완료: output/ocr_results.csv
+# ============================================================
 ```
 
 **과제 B: 크롤링 실행**
+
+**1회성 실행 모드 (기본값, Cron/스케줄러 연동용)**
 ```bash
 # 1페이지 수집
 python main.py crawler --pages 1
 
 # 3페이지 수집 + 상세 정보 포함
 python main.py crawler --pages 3 --details
+```
 
-# 실행 결과 로그 예시:
-# ============================================================
-# 과제 B: 누리장터 데이터 수집 시작
-# 설정: 3페이지, 상세조회=ON
-# ============================================================
-# 
-# [작업 시작] 페이지 1/3
-# 페이지 1: 10건의 공고 발견
-# [1/10] 상세정보 보강 완료: R26BK01321500
-# [1/10] DB 저장 완료: R26BK01321500
-# ...
-# ============================================================
-# 누리장터 데이터 수집 완료 리포트
-# ------------------------------------------------------------
-# 처리 페이지: 3개 (실패: 0개)
-# 발견 공고: 30건
-# 신규 수집: 30건
-# 중복 제외: 0건
-# 검증 에러: 0건
-# 수집 성공률: 100.0%
-# ============================================================
+**반복 실행 모드 (내장 스케줄러)**
+```bash
+# 1시간(3600초)마다 자동으로 3페이지 수집
+python main.py crawler --mode interval --seconds 3600 --pages 3
+
+# 30분마다 상세정보 포함하여 수집
+python main.py crawler --mode interval --seconds 1800 --pages 5 --details
+```
+
+**실행 결과 로그 예시:**
+```
+============================================================
+과제 B: 누리장터 데이터 수집 시작 (모드: once)
+설정 정보: 최대 3페이지, 상세조회: True
+============================================================
+
+[작업 시작] 페이지 1/3
+페이지 1: 10건의 공고 발견
+[1/10] 상세정보 보강 완료: R26BK01321500
+[1/10] DB 저장 완료: R26BK01321500
+...
+============================================================
+누리장터 데이터 수집 완료 리포트
+------------------------------------------------------------
+처리 페이지: 3개 (실패: 0개)
+발견 공고: 30건
+신규 수집: 30건
+중복 제외: 0건
+검증 에러: 0건
+수집 성공률: 100.0%
+============================================================
+데이터 내보내기 성공 (CSV): output/nuri_notices.csv
+수집 완료: 총 30건
 ```
 
 **둘 다 실행**
 ```bash
 python main.py all --pages 2
 ```
+
+### CLI 파라미터 상세
+
+| 파라미터 | 필수 여부 | 기본값 | 설명 |
+|---------|---------|--------|------|
+| `task` | 필수 | - | 실행할 작업: `ocr`, `crawler`, `all` |
+| `--mode` | 선택 | `once` | 크롤러 실행 모드: `once` (1회 실행), `interval` (반복 실행) |
+| `--seconds` | 선택 | `3600` | `interval` 모드 시 대기 시간 (초 단위) |
+| `--pages` | 선택 | `1` | 크롤링할 페이지 수 |
+| `--details` | 선택 | `False` | 상세정보 수집 활성화 플래그 |
 
 ### 생성되는 파일
 
@@ -172,16 +196,38 @@ logs/                       # (자동 생성, 필요 시)
 **핵심 설계 원칙**
 1. **노이즈 허용 파싱**: OCR 특성상 발생하는 띄어쓰기, 오탈자, 순서 변경에 강건하게 대응
 2. **정규식 기반 추출**: 차량번호, 중량 패턴 매칭
-3. **산술 검증**: `총중량 - 공차중량 = 실중량` 관계 자동 검증 (±10kg 오차 허용)
+3. **다단계 보정 및 검증**: 중량값 자동 보정 후 산술 관계 검증
 
 **데이터 정규화 프로세스**
 
-| 단계 | 입력 예시 | 처리 로직 | 출력 예시 |
-|------|----------|----------|----------|
-| 1. 원본 추출 | `80구 8713` | 공백 제거 | `80구8713` |
-| 2. 중량 파싱 | `14 080 kg` | 숫자 통합 + 천단위 처리 | `14080` |
-| 3. 노이즈 필터링 | `02, 11, 12080` | 100 ≤ weight ≤ 999,999 | `12080` (유효) |
-| 4. 산술 검증 | 총-공차=실중량 | 오차 ±10kg 허용 | `is_weight_valid: True` |
+| 단계 | 입력 예시 | 처리 로직 | 출력 예시 | 구현 위치 |
+|------|----------|----------|----------|----------|
+| 1. 전처리 | `11시 30분`, `02:30` | 시간 패턴 제거 | (텍스트 정제) | `_clean_text()` |
+| 2. 원본 추출 | `80구 8713` | 공백 제거 | `80구8713` | `parse()` |
+| 3. 중량 파싱 | `14 080 kg` | 숫자 통합 + 단위 처리 | `14080` | `_extract_weight()` |
+| 4. 노이즈 필터링 | `02, 11, 12080` | 100 ≤ weight ≤ 999,999 | `12080` (유효) | `_extract_weight()` |
+| 5. 자동 보정 | `총12480, 공7470, 실5010` | 크기순 정렬 또는 계산 | 올바른 배치 | `parse()` |
+| 6. 산술 검증 | 총-공차=실중량 | 오차 ±10kg 허용 | `is_weight_valid: True` | `WeightTicket` validator |
+
+**중량값 자동 보정 로직 (핵심 엔지니어링)**
+
+OCR 오인식으로 인해 총중량, 공차중량, 실중량이 뒤섞여 추출될 수 있습니다. 이를 자동으로 보정하는 로직:
+
+```python
+# 1. 세 값이 모두 추출된 경우: 크기 순서대로 자동 배치
+if len(non_zero) >= 3:
+    all_w = sorted(non_zero, reverse=True)
+    extracted['gross_weight'], extracted['tare_weight'], extracted['net_weight'] = all_w[0], all_w[1], all_w[2]
+
+# 2. 두 값만 추출된 경우: 나머지 하나를 산술 관계로 계산
+elif len(non_zero) == 2:
+    if extracted['gross_weight'] > 0 and extracted['net_weight'] > 0:
+        extracted['tare_weight'] = extracted['gross_weight'] - extracted['net_weight']
+    elif extracted['gross_weight'] > 0 and extracted['tare_weight'] > 0:
+        extracted['net_weight'] = extracted['gross_weight'] - extracted['tare_weight']
+    elif extracted['tare_weight'] > 0 and extracted['net_weight'] > 0:
+        extracted['gross_weight'] = extracted['tare_weight'] + extracted['net_weight']
+```
 
 **실제 처리 결과**
 
@@ -201,6 +247,7 @@ logs/                       # (자동 생성, 필요 시)
 │  Orchestrator (crawler.py)              │  ← 워크플로우 제어
 │  - 페이지 순회 / 재시도 전략            │
 │  - 통계 수집 / 리포팅                    │
+│  - 세션 관리                             │
 └──────────────┬──────────────────────────┘
                │
 ┌──────────────┴──────────────────────────┐
@@ -213,15 +260,55 @@ logs/                       # (자동 생성, 필요 시)
 │  Infrastructure (client.py, storage.py) │  ← 외부 의존성
 │  - HTTP 통신 / 지수 백오프               │
 │  - SQLite 트랜잭션 / 중복 체크           │
+│  - 세션 로그 관리                        │
 └─────────────────────────────────────────┘
 ```
 
 **시스템 견고성 설계**
 
-1. **네트워크 복원력**: 지수 백오프 (2초 → 4초 → 8초)
-2. **데이터 원자성**: SQLite 트랜잭션 (ACID 보장)
-3. **증분 수집**: 중복 데이터 자동 스킵
-4. **리소스 관리**: Context Manager 패턴 적용
+1. **네트워크 복원력**: 지수 백오프 (2초 → 4초 → 8초, 최대 10초 제한)
+2. **데이터 원자성**: SQLite 트랜잭션으로 공고 저장과 로그 기록을 동시 수행
+3. **증분 수집**: `scrap_log` 테이블을 통한 중복 데이터 자동 스킵
+4. **세션 추적**: `crawl_sessions` 테이블로 작업 단위 통계 기록
+5. **리소스 관리**: Context Manager 패턴으로 자동 정리
+
+**네트워크 재시도 전략 상세**
+
+```python
+# Rate Limit (429) 대응
+if response.status_code == 429:
+    retry_after = int(response.headers.get('Retry-After', 60))
+    # 서버 지시를 준수하여 대기
+
+# 서버 에러 (5xx) 대응
+if 500 <= response.status_code < 600:
+    wait_time = min(2 ** attempt, 10)  # 지수 백오프 (최대 10초)
+
+# 클라이언트 에러 (4xx) 대응
+if 400 <= response.status_code < 500:
+    # 즉시 중단 (재시도 무의미)
+    raise NonRetryableAPIError()
+```
+
+**데이터베이스 트랜잭션 관리**
+
+공고 데이터와 수집 로그를 하나의 트랜잭션으로 처리하여 데이터 무결성 보장:
+
+```python
+# storage.py::save_notice()
+try:
+    with self.conn:  # 트랜잭션 시작
+        # 1. 공고 데이터 저장
+        self.conn.execute("INSERT OR REPLACE INTO nuri_notices ...")
+        
+        # 2. 성공 로그 기록
+        self.conn.execute("INSERT OR REPLACE INTO scrap_log ...")
+        
+        # COMMIT (자동)
+except Exception as e:
+    # ROLLBACK (자동) - 데이터 저장은 성공했는데 로그가 안 남는 불일치 방지
+    self.log_error(notice_id, str(e))
+```
 
 **코드 품질 원칙**
 
@@ -230,6 +317,7 @@ logs/                       # (자동 생성, 필요 시)
 | 단일 책임 | Client는 통신만, Transformer는 변환만 | client.py, transformer.py |
 | 의존성 역전 | Crawler는 추상화된 인터페이스에 의존 | crawler.py |
 | 컨텍스트 관리 | `with NuriCrawler()` 자동 리소스 해제 | crawler.py |
+| 데이터 검증 | Pydantic 모델을 통한 타입 및 비즈니스 규칙 검증 | schemas.py, transformer.py |
 
 ---
 
@@ -252,7 +340,6 @@ pytest tests/test_crawler_integrated.py -v    # 통합 테스트
 | 테스트 구분 | 테스트 케이스 | 목적 |
 |------------|-------------|------|
 | OCR 파싱 | 4건 | 샘플 데이터 파싱 정확도 검증 |
-| 크롤러 유닛 | 26건 | 모듈별 단위 기능 검증 (Mock) |
 | 크롤러 통합 | 8건 | End-to-End 실제 API 연동 검증 |
 
 ### 주요 테스트 케이스
@@ -262,6 +349,7 @@ pytest tests/test_crawler_integrated.py -v    # 통합 테스트
 test_json_samples[sample_01.json-8713-12000]
    - 차량번호 추출: 8713 ✓
    - 시간 데이터(02, 11) 필터링 ✓
+   - 총중량 임계값 검증: >= 12000kg ✓
    - 산술 검증 통과 ✓
 
 test_csv_excel_compatibility
@@ -274,16 +362,34 @@ test_csv_excel_compatibility
 test_full_logic_integration_with_new_architecture
    - 실제 누리장터 API 호출 ✓
    - DB 저장 및 중복 체크 ✓
+   - DTO 타입 안정성 검증 ✓
+
+test_backward_compatibility
+   - 기존 코드 호출 방식 유효성 확인 ✓
 
 test_incremental_crawling
    - 1차 수집: 5건 저장 ✓
-   - 2차 수집: 중복 스킵 ✓
+   - 2차 수집: 중복 자동 스킵 ✓
+   - DB 건수 불변 검증 ✓
 
 test_with_detail_fetching
-   - 상세 정보 보강 확인 ✓
+   - 상세 정보 API 호출 ✓
+   - raw_data 내 detail 키 보강 확인 ✓
 
 test_export_functionality
-   - JSON/CSV 파일 생성 ✓
+   - JSON 파일 생성 검증 ✓
+   - CSV 파일 생성 검증 ✓
+
+test_statistics
+   - 통계 지표 집계 정확성 확인 ✓
+   - 필수 키 존재 여부 검증 ✓
+
+test_context_manager_usage
+   - with 문을 통한 자동 리소스 해제 ✓
+
+test_error_resilience
+   - 개별 페이지 에러 시 전체 프로세스 계속 진행 ✓
+   - 장애 허용(Fault Tolerance) 검증 ✓
 ```
 
 ---
@@ -295,8 +401,8 @@ test_export_functionality
 **OCR 파싱 결과 (output/ocr_results.csv)**
 ```csv
 ticket_number,vehicle_number,gross_weight,tare_weight,net_weight,parsed_at,is_weight_valid
-T-2024-001,12가3456,14080,8500,5580,2026-02-06T10:47:44.123456,True
-T-2024-002,서울78나9012,18500,9200,9300,2026-02-06T10:47:44.234567,True
+T-2024-001,8713,12480,7470,5010,2026-02-06T10:47:44.123456,True
+T-2024-002,80구8713,13460,7560,5900,2026-02-06T10:47:44.234567,True
 ```
 
 **누리장터 수집 결과 (output/nuri_notices.json)**
@@ -343,7 +449,7 @@ CREATE TABLE nuri_notices (
 );
 ```
 
-**테이블: scrap_log**
+**테이블: scrap_log** (증분 수집 체크포인트)
 ```sql
 CREATE TABLE scrap_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -351,6 +457,20 @@ CREATE TABLE scrap_log (
     status TEXT NOT NULL,              -- SUCCESS / FAILED
     error_msg TEXT,                    -- 실패 시 에러 메시지
     collected_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**테이블: crawl_sessions** (작업 단위 통계)
+```sql
+CREATE TABLE crawl_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    started_at DATETIME,               -- 작업 시작 시각
+    finished_at DATETIME,              -- 작업 종료 시각
+    total_found INTEGER DEFAULT 0,     -- 발견된 총 공고 수
+    total_collected INTEGER DEFAULT 0, -- 신규 수집 성공 수
+    total_skipped INTEGER DEFAULT 0,   -- 중복으로 건너뛴 수
+    total_errors INTEGER DEFAULT 0,    -- 처리 중 발생한 에러 수
+    status TEXT                        -- RUNNING / COMPLETED
 );
 ```
 
@@ -365,6 +485,7 @@ CREATE TABLE scrap_log (
 | 동기 처리 | 순차적 페이지 수집 | 대량 데이터 수집 시 시간 소요 |
 | 정규식 한계 | 패턴 매칭 기반 | 예상 외 포맷 처리 어려움 |
 | IP 차단 위험 | 단일 IP 사용 | 장시간 크롤링 시 차단 가능성 |
+| 단일 프로세스 | 멀티스레드 미지원 | CPU 코어 활용도 낮음 |
 
 ### 개선 로드맵
 
@@ -375,10 +496,16 @@ CREATE TABLE scrap_log (
 **Phase 2: 안정성 강화**
 - Proxy Rotation
 - Rate Limiter 추가
+- Redis 캐싱 레이어
 
 **Phase 3: 정확도 개선**
 - Vision Transformer 기반 OCR (TrOCR)
 - 예상 효과: 파싱 정확도 85% → 95%
+
+**Phase 4: 확장성**
+- PostgreSQL 마이그레이션
+- Kubernetes 배포
+- 실시간 모니터링 (Grafana)
 
 ---
 
