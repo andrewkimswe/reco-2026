@@ -1,0 +1,70 @@
+[
+  {
+    "source_file": "sample_01.json",
+    "vehicle_number": "8713",
+    "gross_weight": 12480,
+    "tare_weight": 4920,
+    "net_weight": 7560,
+    "is_weight_valid": true,
+    "measurement_date": "2026-02-02",
+    "measurement_times": [
+      "05:26:18",
+      "05:36:01"
+    ],
+    "organization": "동우바이오(주)",
+    "customer": "곰욕환경폐기물",
+    "confidence_score": 0.9242,
+    "parsed_at": "2026-02-05T19:19:31Z"
+  },
+  {
+    "source_file": "sample_02.json",
+    "vehicle_number": "80구8713",
+    "gross_weight": 13000,
+    "tare_weight": 5440,
+    "net_weight": 7560,
+    "is_weight_valid": true,
+    "measurement_date": "2026-02-02",
+    "measurement_times": [
+      "11:26:18",
+      "11:36:01"
+    ],
+    "organization": "동우바이오(주)",
+    "customer": "곰욕환경폐기물",
+    "confidence_score": 0.9315,
+    "parsed_at": "2026-02-05T19:19:31Z"
+  },
+  {
+    "source_file": "sample_03.json",
+    "vehicle_number": "5405",
+    "gross_weight": 14000,
+    "tare_weight": 6440,
+    "net_weight": 7560,
+    "is_weight_valid": true,
+    "measurement_date": "2026-02-02",
+    "measurement_times": [
+      "02:26:18",
+      "02:36:01"
+    ],
+    "organization": "동우바이오(주)",
+    "customer": "곰욕환경폐기물",
+    "confidence_score": 0.9287,
+    "parsed_at": "2026-02-05T19:19:31Z"
+  },
+  {
+    "source_file": "sample_04.json",
+    "vehicle_number": "0580",
+    "gross_weight": 14000,
+    "tare_weight": 6440,
+    "net_weight": 7560,
+    "is_weight_valid": true,
+    "measurement_date": "2026-02-02",
+    "measurement_times": [
+      "05:26:18",
+      "05:36:01"
+    ],
+    "organization": "동우바이오(주)",
+    "customer": "곰욕환경폐기물",
+    "confidence_score": 0.9318,
+    "parsed_at": "2026-02-05T19:19:31Z"
+  }
+]

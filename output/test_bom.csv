@@ -1,0 +1,2 @@
+﻿ticket_number,vehicle_number,gross_weight,tare_weight,net_weight,parsed_at,is_weight_valid
+0000,12가3456,25000,15000,10000,2026-02-06 10:51:25.556212,True

@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# 데이터베이스
+*.db
+*.sqlite3
+data/
+
+# 로그
+logs/
+*.log
+
+# 결과물 (옵션: 포함하려면 주석 처리)
+# output/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# 테스트
+.pytest_cache/
+.coverage
+htmlcov/
+
+# 기타
+*.bak
+*.tmp
