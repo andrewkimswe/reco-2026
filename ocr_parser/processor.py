@@ -6,7 +6,7 @@ from typing import List
 from loguru import logger
 from ocr_parser.schemas import WeightTicket, ParsingResult
 
-# 글로벌 설정 및 임계값 정의 (Magic Number 제거)
+# 글로벌 설정 및 임계값 정의
 MIN_WEIGHT_KG = 100
 MAX_WEIGHT_KG = 999_999
 DEFAULT_OUTPUT_DIR = "output"
