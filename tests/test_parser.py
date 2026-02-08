@@ -3,7 +3,6 @@ import sys
 import json
 import pytest
 
-# 프로젝트 루트 경로를 sys.path에 추가하여 패키지 임포트 문제를 해결합니다.
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)

@@ -18,7 +18,7 @@ data/
 logs/
 *.log
 
-# 결과물 (옵션: 포함하려면 주석 처리)
+# 결과물
 # output/
 
 # IDE

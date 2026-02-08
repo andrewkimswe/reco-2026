@@ -3,7 +3,7 @@ from typing import Optional, Any
 from pydantic import BaseModel, Field, field_validator, model_validator
 from loguru import logger
 
-# 운영 요구사항에 따른 물리적 오차 허용 범위 (단위: kg)
+# 물리적 오차 허용 범위 (단위: kg)
 WEIGHT_TOLERANCE_KG = 10
 
 
@@ -34,7 +34,7 @@ class WeightTicket(BaseModel):
     @model_validator(mode='after')
     def validate_weight_calculation(self) -> 'WeightTicket':
         """
-        [비즈니스 로직] 총중량 - 공차중량 = 실중량 관계를 검증합니다.
+        총중량 - 공차중량 = 실중량 관계를 검증합니다.
         OCR 오인식으로 인해 오차가 발생할 경우 로그를 남기고 유효성 플래그를 변경합니다.
         """
         # 기대되는 실중량 계산

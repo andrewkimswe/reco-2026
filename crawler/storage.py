@@ -25,6 +25,7 @@ class CrawlerStorage:
 
         # 멀티스레드 환경 대응을 위해 check_same_thread=False 설정
         self.conn = sqlite3.connect(db_path, check_same_thread=False)
+        self.conn.execute("PRAGMA journal_mode=WAL") # WAL 모드 활성화 - 성능 및 동시성 최적화
         self.conn.row_factory = sqlite3.Row  # 결과를 딕셔너리처럼 접근 가능하게 설정
         self._init_db()
 
