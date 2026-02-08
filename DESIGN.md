@@ -244,7 +244,6 @@ weight_pattern = r'(\d[\d,]{2,})\s*kg'
 - 구현 단순성: 정규식은 의존성 없이 빠르게 구현 가능
 - 재현성: 동일 입력에 동일 출력 보장
 - 디버깅 용이: 패턴 수정이 명확
-- 확장성 제약: 예상 외 포맷 대응 어려움
 
 #### 결정 2: 노이즈 필터링 임계값
 ```python
@@ -256,7 +255,6 @@ valid_weights = [w for w in weights if MIN_WEIGHT_KG <= w <= MAX_WEIGHT_KG]
 
 **근거**
 - OCR 텍스트에 시간 데이터(02, 11)가 포함되어 중량으로 오인식
-- 실제 계근지 중량 범위: 소형차 100kg ~ 대형 트레일러 100톤
 - 트레이드오프: 극단적 케이스(99kg 화물) 누락 가능
 
 #### 결정 3: 다단계 보정 전략
@@ -287,7 +285,6 @@ is_valid = diff <= WEIGHT_TOLERANCE_KG
 
 **근거**
 - OCR 오류로 인한 1~2자리 숫자 인식 오차 고려
-- 실무에서 계근 장비 오차 범위 ±5kg 내외
 - 트레이드오프: 명백한 데이터 오류 통과 가능
 
 ### 크롤링 시스템 설계
@@ -334,6 +331,7 @@ wait_time = min(RETRY_BACKOFF_BASE ** attempt, RETRY_BACKOFF_MAX)
 - 서버 부하 완화: 장애 시 점진적 재시도로 서버 복구 시간 확보
 - RFC 표준 준수: RFC 7231 권장 방식
 - 성공률 향상: 일시적 네트워크 불안정 대응
+- 트래픽 폭주(Thundering Herd) 제어
 
 **수치 선정 이유**
 - 최대 재시도: 3회 (AWS/Google Cloud 기본값)
@@ -366,7 +364,6 @@ conn = sqlite3.connect("data/crawler_state.db")
 - 재현성: 별도 DB 서버 설치 불필요, 단일 파일 배포
 - 트랜잭션 지원: ACID 보장으로 데이터 무결성 확보
 - 경량: 소규모 데이터(수만 건)에 충분한 성능
-- 동시성 제약: 다중 프로세스 동시 쓰기 불가
 
 **마이그레이션 계획**
 ```sql
@@ -422,7 +419,6 @@ logger.info("페이지 1 처리 중...")
 - 간결한 설정: 한 줄로 파일/콘솔 동시 출력
 - 컨텍스트 바인딩: `logger.bind(notice_id=x)` 자동 추가
 - 성능: 표준 logging 대비 10~20% 빠름
-- 외부 의존성: 표준 라이브러리 아님
 
 ---
 
@@ -449,15 +445,7 @@ logger.info("페이지 1 처리 중...")
 | 비동기 처리 | 400% | 복잡 | 높음 | 미채택 (Phase 2) |
 | 멀티프로세스 | 300% | 매우 복잡 | 매우 높음 | 미채택 |
 
-**벤치마크 (10페이지 수집)**
-```
-동기 (requests):      15초
-비동기 (aiohttp):     3.5초
-멀티프로세스:         4초 (Context Switching 오버헤드)
-```
-
 **결정 근거**
-- 과제 요구사항 1~5페이지 수집: 동기 방식으로 충분
 - 에러 추적 및 로깅이 명확하여 개발 속도 향상
 - 프로덕션 전환 시 비동기로 전환 계획
 
@@ -493,24 +481,11 @@ class NaverShoppingCrawler(BaseCrawler):
 - 트랜잭션 원자성 보장
 - 세션 관리 시스템
 
-### Phase 2: 성능 최적화 (3개월)
+### Phase 2: 성능 최적화
 - 비동기 배치 수집 (aiohttp)
 - Redis 캐싱 레이어
 - Proxy Rotation
 - 병렬 상세 조회
-
-### Phase 3: 정확도 개선 (6개월)
-- Vision Transformer (TrOCR)
-- Few-shot Learning 적용
-- 사용자 피드백 루프
-- Active Learning 파이프라인
-
-### Phase 4: 프로덕션 전환 (1년)
-- PostgreSQL 마이그레이션
-- Kubernetes 배포
-- 실시간 모니터링 (Grafana)
-- 알림 시스템 (Slack/Email)
-
 ---
 
 ## 코드 메트릭스
