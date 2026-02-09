@@ -1,12 +1,49 @@
 # OCR 및 데이터 크롤링 통합 프로젝트
 
 ## 목차
+- [Quick Start](#quick-start)
 - [프로젝트 구조](#프로젝트-구조)
 - [실행 방법](#실행-방법)
 - [설계 및 주요 기능](#설계-및-주요-기능)
 - [테스트 및 검증](#테스트-및-검증)
 - [결과 산출물](#결과-산출물)
 - [한계점 및 개선 아이디어](#한계점-및-개선-아이디어)
+
+---
+
+## Quick Start
+
+> 30초 안에 바로 시작하기
+
+### 공통 설정
+
+```bash
+# 저장소 클론 및 환경 설정
+git clone https://github.com/andrewkimswe/reco-2026.git
+cd reco-2026
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 과제 A: OCR 계근표 파싱
+
+```bash
+python main.py ocr
+```
+
+**결과:** `output/ocr_results.csv` (차량번호, 중량 데이터 추출 완료)
+
+### 과제 B: 누리장터 크롤링
+
+```bash
+# 기본 수집
+python main.py crawler --pages 1
+
+# 상세 정보 포함
+python main.py crawler --pages 3 --details
+```
+
+**결과:** `output/nuri_notices.csv`, `data/crawler_state.db`
 
 ---
 
